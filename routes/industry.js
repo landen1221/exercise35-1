@@ -37,7 +37,7 @@ router.post('/:indCode/:compCode', async (req, res, next) => {
     try {
         const {indCode, compCode} = req.params;
 
-        const { rows } = await db.query(`INSERT INTO company_industry (ind_code, comp_code) VALUES ($1, $2) RETURNING *`, [indCode, compCode])
+        const { rows } = await db.query(`INSERT INTO company_industry (ind_code, comp_code) VALUES ($1, $2) RETURNING ind_code, comp_code`, [indCode, compCode])
 
         return res.status(201).json({Connected: rows})
 

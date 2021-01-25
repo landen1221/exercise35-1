@@ -30,3 +30,38 @@ describe("Get /invoices", () => {
         expect(res.body).toEqual({invoices: [testInvoice]})
     })
 })
+
+describe("Get /invoices/:id", () => {
+    test("Get a single invoice", async () => {
+        const res = await request(app).get(`/invoices/${testInvoice.id}`);
+        expect(res.statusCode).toBe(200);
+
+        expect(res.body).toEqual({invoice: testInvoice})
+    })
+    test("ID not found", async () => {
+        const res = await request(app).get(`/invoices/0`);
+        expect(res.statusCode).toBe(404)
+    })
+})
+
+describe("Patch /invoices/:id", () => {
+    test("Get a list of all invoices", async () => {
+        const res = await request(app).patch(`/invoices/${testInvoice.id}`).send({"amt": 500, "paid": true});
+
+        expect(res.statusCode).toBe(200);
+
+    })
+})
+
+describe("Delete /invoices/:id", () => {
+    test("Get a list of all invoices", async () => {
+        const res = await request(app).delete(`/invoices/${testInvoice.id}`);
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toEqual({msg: `Invoice w/ id (${testInvoice.id}) successfully removed!`})
+
+    })
+    test("ID not found", async () => {
+        const res = await request(app).delete(`/invoices/0`);
+        expect(res.statusCode).toBe(404)
+    })
+})
