@@ -18,14 +18,14 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
     try {
-        const { comp_code, amt, paid, add_date, paid_date } = req.body;
+        let results;
+        const { comp_code, amt, paid, paid_date } = req.body;
 
         if (paid_date) {
-            const results = await db.query(`INSERT INTO invoices (comp_code, amt, paid,  paid_date) VALUES ($1, $2, $3, CURRENT_DATE) RETURNING *`, [comp_code, amt, paid])
+            results = await db.query(`INSERT INTO invoices (comp_code, amt, paid,  paid_date) VALUES ($1, $2, $3, CURRENT_DATE) RETURNING *`, [comp_code, amt, paid])
         }
         
-
-        return res.status(201).json({ invoice: results.rows[0]})
+        return res.status(201).json({ invoice: results ? results.rows[0] : [] })
 
     } catch (err) {
         return next (err)
@@ -36,8 +36,9 @@ router.get('/:id', async (req, res, next) => {
     try {
         const { id } = req.params;
         const results = await db.query(`SELECT * FROM invoices WHERE id=$1`, [id])
+        
         if (results.rows.length === 0) {
-            throw new ExpressError(`Invoice with id (${id}) not found`)
+            throw new ExpressError(`Invoice with id (${id}) not found`, 404)
         }
         return res.json({invoice: results.rows[0]})
 

@@ -6,8 +6,8 @@ const db = require("../db");
 
 router.get("/", async (req, res, next) => {
   try {
-    const results = await db.query(`SELECT * FROM companies`);
-    return res.json({ companies: results.rows });
+    const { rows } = await db.query(`SELECT * FROM companies`);
+    return res.json({ companies: rows });
   } catch (err) {
     return next(err);
   }
@@ -16,26 +16,32 @@ router.get("/", async (req, res, next) => {
 // {company: {code, name, description, invoices: [id, ...]}}
 router.get("/:code", async (req, res, next) => {
   try {
-    const code = req.params.code;
-    const results = await db.query(`SELECT * FROM companies WHERE code=$1`, [
+    const {code} = req.params;
+    const {rows: compRows} = await db.query(`SELECT * FROM companies WHERE code=$1`, [
       code,
     ]);
 
-    if (results.rows.length === 0) {
+    if (compRows.length === 0) {
       throw new ExpressError(`Can't find company with code of ${code}`, 404);
     }
 
-    const invoiceRes = await db.query(
+    const {rows: invoiceRows} = await db.query(
       `SELECT * FROM invoices WHERE comp_code=$1`,
       [code]
     );
 
-    const industryRes = await db.query(`SELECT i.industry FROM industry AS i JOIN company_industry AS ci ON i.code = ci.ind_code WHERE ci.comp_code = $1`, [code])
+    const industries = (
+      await db.query(
+        `SELECT i.industry FROM industry AS i JOIN company_industry AS ci ON i.code = ci.ind_code WHERE ci.comp_code = $1`,
+        [code]
+      )
+    ).rows.map((val) => val.industry);
 
-    const industries = industryRes.rows.map(val => val.industry)
-
-    return res.send({ company: results.rows[0], invoices: invoiceRes.rows, industry: industries});
-
+    return res.send({
+      company: compRows[0],
+      invoices: invoiceRows,
+      industries,
+    });
   } catch (err) {
     return next(err);
   }
