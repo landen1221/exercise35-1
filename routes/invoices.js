@@ -16,13 +16,14 @@ router.get('/', async (req, res, next) => {
     }
 })
 
-// convert add_date to Now
-// make paid_date nullable
-// make paid optional
 router.post('/', async (req, res, next) => {
     try {
         const { comp_code, amt, paid, add_date, paid_date } = req.body;
-        const results = await db.query(`INSERT INTO invoices (comp_code, amt, paid, add_date, paid_date) VALUES ($1, $2, $3, $4, $5) RETURNING *`, [comp_code, amt, paid, add_date, paid_date])
+
+        if (paid_date) {
+            const results = await db.query(`INSERT INTO invoices (comp_code, amt, paid,  paid_date) VALUES ($1, $2, $3, CURRENT_DATE) RETURNING *`, [comp_code, amt, paid])
+        }
+        
 
         return res.status(201).json({ invoice: results.rows[0]})
 
@@ -49,8 +50,15 @@ router.get('/:id', async (req, res, next) => {
 router.patch('/:id', async (req, res, next)=> {
     try {
         const { id } = req.params;
-        const { comp_code, amt, paid, paid_date } = req.body;
-        const results = await db.query(`UPDATE invoices SET comp_code=$1, amt=$2, paid=$3, paid_date=$4 WHERE id=$5 RETURNING *`, [comp_code, amt, paid, paid_date, id])
+        const { amt, paid } = req.body;
+        let results;
+
+        if (paid) {
+            results = await db.query(`UPDATE invoices SET amt=$1, paid=$2, paid_date=CURRENT_DATE WHERE id=$3 RETURNING *`, [amt, paid, id])
+        } else if (! paid) {
+            results = await db.query(`UPDATE invoices SET amt=$1, paid=$2, paid_date=NULL WHERE id=$3 RETURNING *`, [amt, paid, id])
+        }
+        
 
         if (results.rows.length === 0) {
             throw new ExpressError(`Invoice ID (${id}) not found.`, 404);
@@ -79,14 +87,6 @@ router.delete('/:id', async (req, res, next) => {
         return next (err)
     }
 })
-
-// router.get('/:id', async (req, res, next) => {
-//     try {
-
-//     } catch (err) {
-//         return next (err)
-//     }
-// })
 
 
 module.exports = router;
